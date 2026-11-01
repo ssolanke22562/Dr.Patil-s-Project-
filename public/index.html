@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dr. Patil's Centre of Advance Dentistry - Clinic Management System</title>
+  <meta name="description" content="Offline-first clinical patient intake, scheduling and queue management application for Dr. Patil's Centre of Advance Dentistry." />
+  <link rel="stylesheet" href="css/styles.css" />
+  <!-- Optional modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- TOP CLINIC NAVIGATION BAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="brand-wrapper">
+        <div class="brand-icon">
+          <!-- Dental Tooth & Medical Cross SVG Icon -->
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C8 2 5 4.5 5 8c0 3 1.5 6 3 9.5 1 2.5 2 4.5 4 4.5s3-2 4-4.5c1.5-3.5 3-6.5 3-9.5 0-3.5-3-6-7-6z"/>
+            <path d="M12 7v6"/>
+            <path d="M9 10h6"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Dr. Patil's Centre of Advance Dentistry</h1>
+          <p>Advanced Patient Intake, Offline Queue & Clinic Management</p>
+        </div>
+      </div>
+
+      <div class="nav-right-actions">
+        <!-- Academic project badge -->
+        <button id="btn-academic-info" class="badge-tag academic" title="Click to view Academic Submission Details">
+          🎓 SRES COE | Roll: 05
+        </button>
+
+        <!-- 19 Test cases QA Suite button -->
+        <button id="btn-run-tests" class="btn btn-secondary btn-sm" title="Run 19 Test Cases from Section 6">
+          🧪 QA Tests (TC-01..19)
+        </button>
+
+        <!-- Live Clock -->
+        <span id="live-clock" style="font-size:0.775rem; color:#64748b; font-weight:600; min-width:140px; text-align:right;"></span>
+
+        <!-- Active User Profile Pill -->
+        <div id="nav-user-pill" class="user-profile-pill" style="display:none;">
+          <span style="font-weight:700; color:#0f172a;" id="nav-user-name">Staff</span>
+          <span class="user-role-badge" id="nav-user-role">Role</span>
+        </div>
+
+        <!-- Reset Seed Data Button -->
+        <button id="btn-reset-data" class="btn btn-secondary btn-sm" title="Reset Demo Data">
+          🔄 Reset Data
+        </button>
+
+        <!-- Logout Button -->
+        <button id="btn-logout" class="btn btn-secondary btn-sm" style="display:none;" title="Logout">
+          🚪 Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="main-wrapper">
+
+    <!-- VIEW 1: AUTHENTICATION & LOGIN SCREEN -->
+    <section id="view-auth" class="auth-hero-section">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div style="margin: 0 auto 0.75rem auto; width: 54px; height: 54px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2C8 2 5 4.5 5 8c0 3 1.5 6 3 9.5 1 2.5 2 4.5 4 4.5s3-2 4-4.5c1.5-3.5 3-6.5 3-9.5 0-3.5-3-6-7-6z"/>
+              <path d="M12 7v6"/>
+              <path d="M9 10h6"/>
+            </svg>
+          </div>
+          <h2>Clinic Staff Portal</h2>
+          <p>Secure Role-Based Access (Admin & Reception Desks)</p>
+        </div>
+
+        <div class="auth-body">
+          <!-- 1-Click Quick Fill Chips for Demo Presentation -->
+          <div class="demo-chips-box">
+            <p>⚡ Quick-Fill Demo Accounts (Click to test):</p>
+            <div class="chips-container">
+              <button type="button" class="chip-btn" data-email="admin@drpatil.com" data-password="admin123" data-role="Admin">
+                👨‍⚕️ <strong>Admin</strong> (Dr. Ganesh Janjal)
+              </button>
+              <button type="button" class="chip-btn" data-email="reception1@drpatil.com" data-password="recep123" data-role="Reception Desk 1">
+                👩‍💼 <strong>Reception 1</strong> (Pooja G.)
+              </button>
+              <button type="button" class="chip-btn" data-email="reception2@drpatil.com" data-password="recep123" data-role="Reception Desk 2">
+                👨‍💼 <strong>Reception 2</strong> (Rohit K.)
+              </button>
+            </div>
+          </div>
+
+          <form id="login-form">
+            <div class="form-group">
+              <label class="form-label" for="login-email">Staff Email Address <span class="req">*</span></label>
+              <input type="email" id="login-email" class="form-control" placeholder="e.g. admin@drpatil.com" required value="admin@drpatil.com" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="login-password">Account Password <span class="req">*</span></label>
+              <input type="password" id="login-password" class="form-control" placeholder="••••••••" required value="admin123" />
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem; font-size:0.95rem; margin-top:0.5rem;">
+              🔐 Authenticate & Open Dashboard
+            </button>
+          </form>
+
+          <div style="margin-top: 1.5rem; text-align: center; font-size: 0.75rem; color: #64748b; line-height: 1.4;">
+            <p>🛡️ <strong>Security Guaranteed:</strong> Passwords hashed with Salted SHA-256 with per-install salt. Encrypted session tokens with 8-hour expiry.</p>
+            <p style="margin-top: 4px;">📡 100% Offline SQLite Architecture &bull; Zero Cloud Dependency</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: ADMIN DASHBOARD -->
+    <section id="view-admin" style="display:none;">
+      <!-- KPI Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <p class="title">Total Patients</p>
+            <h3 class="value" id="stat-total-patients">0</h3>
+            <p class="subtitle">Active clinical records</p>
+          </div>
+          <div class="stat-icon teal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <p class="title">Today's Appointments</p>
+            <h3 class="value" id="stat-today-appointments">0</h3>
+            <p class="subtitle">Scheduled for today</p>
+          </div>
+          <div class="stat-icon blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <p class="title">Pending Payments</p>
+            <h3 class="value" id="stat-pending-payments">₹0</h3>
+            <p class="subtitle" id="stat-pending-count">0 patients</p>
+          </div>
+          <div class="stat-icon amber">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <p class="title">Revenue Collected</p>
+            <h3 class="value" id="stat-revenue-collected">₹0</h3>
+            <p class="subtitle">Total fees received</p>
+          </div>
+          <div class="stat-icon emerald">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab Navigation -->
+      <div class="tabs-header">
+        <button class="tab-btn active" data-admin-tab="overview">
+          📊 Analytics & Overview
+        </button>
+        <button class="tab-btn" data-admin-tab="queue">
+          👥 Patient Queue & Registry
+        </button>
+        <button class="tab-btn" data-admin-tab="appointments">
+          📅 Appointment Scheduling
+        </button>
+        <button class="tab-btn" data-admin-tab="export">
+          💾 Data Export & Backups
+        </button>
+        <button class="tab-btn" data-admin-tab="trash">
+          🗑️ Archive / Soft-Deleted
+        </button>
+      </div>
+
+      <!-- TAB 1: OVERVIEW & ANALYTICS -->
+      <div id="admin-tab-overview" class="admin-tab-pane">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:1.5rem;">
+          <div class="card">
+            <div class="card-header">
+              <h3>📈 Patient Visit Distribution</h3>
+            </div>
+            <div class="card-body">
+              <div id="chart-visit-types"></div>
+              <div style="margin-top:1.5rem; font-size:0.85rem; color:#64748b; line-height:1.6;">
+                <p>✅ <strong>New Patient Intake:</strong> Digitized registration with automated serial numbering and front-desk grace-window typo correction.</p>
+                <p style="margin-top:6px;">✅ <strong>Double-Booking Protection:</strong> Real-time conflict engine with ±30-minute collision detection across dental operatories.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>🕒 Recent Audit Log Activity</h3>
+            </div>
+            <div class="card-body">
+              <div id="admin-audit-log-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: PATIENT QUEUE & DIRECTORY -->
+      <div id="admin-tab-queue" class="admin-tab-pane" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>👥 Clinic Patient Directory & Queue</h3>
+            <span style="font-size:0.775rem; color:#64748b;">Click payment badge to 1-tap toggle (TC-13)</span>
+          </div>
+          <div class="card-body">
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="admin-queue-search" class="form-control" placeholder="Search by patient name, phone, or Sr. No..." />
+              </div>
+
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <label style="font-size:0.8rem; font-weight:600; color:#475569;">Payment:</label>
+                <select id="admin-filter-payment" class="form-control" style="width:130px;">
+                  <option value="All">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <label style="font-size:0.8rem; font-weight:600; color:#475569;">Date:</label>
+                <select id="admin-filter-date" class="form-control" style="width:130px;">
+                  <option value="All">All Time</option>
+                  <option value="Today">Today</option>
+                  <option value="Week">This Week</option>
+                  <option value="Month">This Month</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Sr. No</th>
+                    <th>Patient Details</th>
+                    <th>Contact & Address</th>
+                    <th>Visit / Chief Problem</th>
+                    <th>Payment (1-Tap Toggle)</th>
+                    <th>Reg. Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-patient-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: APPOINTMENT SCHEDULING (TC-14) -->
+      <div id="admin-tab-appointments" class="admin-tab-pane" style="display:none;">
+        <div style="display:grid; grid-template-columns: 360px 1fr; gap:1.5rem;">
+          <!-- Schedule Form -->
+          <div class="card">
+            <div class="card-header">
+              <h3>📅 Book Appointment</h3>
+            </div>
+            <div class="card-body">
+              <!-- Live Conflict Alert Banner (TC-14) -->
+              <div id="apt-conflict-banner" class="conflict-alert" style="display:none;">
+                <span class="icon">⚠️</span>
+                <div>
+                  <h4>Double-Booking Conflict Detected!</h4>
+                  <p id="apt-conflict-text"></p>
+                  <div style="margin-top:6px;">
+                    <label style="font-size:0.75rem; color:#991b1b; display:flex; align-items:center; gap:4px; font-weight:700;">
+                      <input type="checkbox" id="apt-allow-override" /> Allow conflict override (Doctor approved)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <form id="schedule-apt-form">
+                <div class="form-group">
+                  <label class="form-label" for="apt-patient-id">Select Patient <span class="req">*</span></label>
+                  <select id="apt-patient-id" class="form-control" required>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="apt-date">Appointment Date <span class="req">*</span></label>
+                  <input type="date" id="apt-date" class="form-control" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="apt-time">Time Slot <span class="req">*</span></label>
+                  <input type="time" id="apt-time" class="form-control" required />
+                  <span style="font-size:0.725rem; color:#64748b;">Enforces ±30-minute collision check</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="apt-dentist">Attending Dental Surgeon</label>
+                  <select id="apt-dentist" class="form-control">
+                    <option value="Dr. Ganesh Janjal">Dr. Ganesh Janjal (BDS, MDS Oral Surgery)</option>
+                    <option value="Dr. Ananya Rao">Dr. Ananya Rao (Pedodontist)</option>
+                    <option value="Dr. Siddharth Joshi">Dr. Siddharth Joshi (Orthodontist)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="apt-treatment">Procedure / Treatment</label>
+                  <input type="text" id="apt-treatment" class="form-control" placeholder="e.g. Root Canal Obturation / Braces adjustment" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="apt-notes">Pre-Op Clinical Notes</label>
+                  <textarea id="apt-notes" class="form-control" rows="2" placeholder="e.g. Check allergy status, intraoral radiograph required"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                  📅 Confirm & Schedule
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Appointments List -->
+          <div class="card">
+            <div class="card-header">
+              <h3>🕒 Clinic Calendar & Operatory Timeline</h3>
+              <span style="font-size:0.775rem; color:#64748b;">Chronological Appointment Logs</span>
+            </div>
+            <div class="card-body">
+              <div id="admin-appointments-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: EXPORT & BACKUPS (TC-16, TC-17) -->
+      <div id="admin-tab-export" class="admin-tab-pane" style="display:none;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:1.5rem;">
+          <!-- CSV Export Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3>📊 CSV Clinical Data Export (TC-16)</h3>
+            </div>
+            <div class="card-body">
+              <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
+                Exports all active, non-deleted patient records along with complete appointment history logs into a standardized CSV file compatible with Microsoft Excel and Google Sheets.
+              </p>
+              <button id="btn-export-csv" class="btn btn-primary" style="width:100%; padding:0.75rem;">
+                📥 Download Patient & Appointment CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Database Backup Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3>💾 Local Database Snapshot & Backup (TC-17)</h3>
+            </div>
+            <div class="card-body">
+              <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
+                Generates a complete offline JSON/SQLite database snapshot containing staff credentials (salted hashes), patient records, appointment timeline, and audit logs.
+              </p>
+              <button id="btn-export-db" class="btn btn-secondary" style="width:100%; padding:0.75rem; margin-bottom:1rem;">
+                💾 Download Full Clinic Database Backup
+              </button>
+
+              <div style="border-top:1px solid #e2e8f0; padding-top:1rem;">
+                <label class="form-label" style="font-size:0.775rem;">Restore from Backup JSON:</label>
+                <input type="file" id="db-restore-file" accept=".json" class="form-control" style="font-size:0.8rem;" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: ARCHIVE / TRASH (TC-15) -->
+      <div id="admin-tab-trash" class="admin-tab-pane" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>🗑️ Soft-Deleted Patient Archive (TC-15)</h3>
+            <span style="font-size:0.775rem; color:#64748b;">Records flagged as deleted are preserved here and excluded from active queues and CSV exports</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Sr. No</th>
+                    <th>Patient Name</th>
+                    <th>Phone</th>
+                    <th>Chief Problem</th>
+                    <th>Deletion Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-trash-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: RECEPTIONIST VIEW -->
+    <section id="view-reception" style="display:none;">
+      <!-- Query-Level Privacy Banner (TC-10) -->
+      <div class="banner-notice privacy">
+        <div>
+          <strong style="color:#1e40af;">🛡️ Role-Based Privacy Enforced (TC-10):</strong>
+          <span style="color:#1e3a8a; font-size:0.825rem; margin-left:6px;">
+            Front-desk receptionists can only view minimal patient identifiers (Sr. No and Name). Clinical histories, contact numbers, and financial details are strictly restricted to the Doctor/Admin.
+          </span>
+        </div>
+      </div>
+
+      <!-- Reception Tabs -->
+      <div class="tabs-header">
+        <button class="tab-btn active" data-recep-tab="register">
+          📝 New Patient Intake Registration
+        </button>
+        <button class="tab-btn" data-recep-tab="queue">
+          📋 Today's Reception Queue & Grace Edit
+        </button>
+      </div>
+
+      <!-- RECEPTION TAB 1: REGISTRATION FORM -->
+      <div id="recep-tab-register" class="recep-tab-pane">
+        <div class="card" style="max-width:960px; margin:0 auto;">
+          <div class="card-header">
+            <h3>📝 Patient Intake Registration Form</h3>
+            <span style="font-size:0.775rem; color:#0f766e; font-weight:700;">Automatic Serial Number (Sr. No) Assigned Upon Submission</span>
+          </div>
+          <div class="card-body">
+            <form id="patient-reg-form">
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem;">
+                
+                <!-- Full Name (Mandatory) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-name">Patient Full Name <span class="req">*</span></label>
+                  <input type="text" id="reg-name" class="form-control" placeholder="e.g. Anand Sathe" required />
+                  <span style="font-size:0.725rem; color:#64748b;">Validated mandatory field (TC-04)</span>
+                </div>
+
+                <!-- Age (Mandatory 0-120) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-age">Age (Years) <span class="req">*</span></label>
+                  <input type="number" id="reg-age" class="form-control" min="0" max="120" placeholder="e.g. 34" required />
+                  <span style="font-size:0.725rem; color:#64748b;">Enforces range 0 - 120 (TC-05)</span>
+                </div>
+
+                <!-- Sex (Mandatory) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-sex">Sex / Gender <span class="req">*</span></label>
+                  <select id="reg-sex" class="form-control" required>
+                    <option value="">-- Select Sex --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <!-- Visit Type (Mandatory) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-visit-type">Visit Type <span class="req">*</span></label>
+                  <select id="reg-visit-type" class="form-control" required>
+                    <option value="First Time">First Time</option>
+                    <option value="Already Consulted">Already Consulted</option>
+                  </select>
+                </div>
+
+                <!-- Primary Phone (Mandatory 10 Digits) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-phone-primary">Primary Contact Number (10 Digits) <span class="req">*</span></label>
+                  <input type="tel" id="reg-phone-primary" class="form-control" pattern="[0-9]{10}" maxlength="10" placeholder="e.g. 9822114477" required />
+                  <span style="font-size:0.725rem; color:#64748b;">Strict 10 digits validation (TC-06)</span>
+                </div>
+
+                <!-- Secondary Phone (Optional/10 Digits) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-phone-secondary">Secondary Phone (Optional)</label>
+                  <input type="tel" id="reg-phone-secondary" class="form-control" pattern="[0-9]{10}" maxlength="10" placeholder="e.g. 9423556677" />
+                </div>
+              </div>
+
+              <!-- Address (Mandatory) -->
+              <div class="form-group" style="margin-top:0.5rem;">
+                <label class="form-label" for="reg-address">Residential Address <span class="req">*</span></label>
+                <textarea id="reg-address" class="form-control" rows="2" placeholder="House/Flat No, Street, Landmark, Town/City" required></textarea>
+              </div>
+
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem;">
+                <!-- Last Consultation Date (Optional) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-last-consult">Last Consultation Date (Optional)</label>
+                  <input type="date" id="reg-last-consult" class="form-control" />
+                </div>
+
+                <!-- Consultation Fee (Initial) -->
+                <div class="form-group">
+                  <label class="form-label" for="reg-payment-amount">Consultation Fee (₹)</label>
+                  <input type="number" id="reg-payment-amount" class="form-control" value="500" />
+                </div>
+              </div>
+
+              <!-- Chief Problem / Complaint (Optional) -->
+              <div class="form-group">
+                <label class="form-label" for="reg-complaint">Chief Problem / Dental Complaint</label>
+                <textarea id="reg-complaint" class="form-control" rows="2" placeholder="e.g. Toothache, Swollen gums, Root canal consultation, Braces tightening"></textarea>
+              </div>
+
+              <!-- Patient Photo (Camera / Gallery Picker) -->
+              <div class="form-group" style="background:#f8fafc; padding:1rem; border-radius:var(--radius-md); border:1px solid #e2e8f0;">
+                <label class="form-label">Patient Photograph (Optional - TC-08)</label>
+                <div style="display:flex; align-items:center; gap:1.25rem;">
+                  <div class="avatar-preview-box">
+                    <img id="reg-photo-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5'><circle cx='12' cy='8' r='4'/><path d='M6 20v-2a6 6 0 0 1 12 0v2'/></svg>" alt="Preview" />
+                  </div>
+                  <div>
+                    <input type="file" id="reg-photo-file" accept="image/*" class="form-control" style="font-size:0.8rem; margin-bottom:0.35rem;" />
+                    <input type="hidden" id="reg-photo-data" />
+                    <span style="font-size:0.75rem; color:#64748b;">Supports instant camera capture or photo gallery upload.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+                <button type="reset" class="btn btn-secondary">Clear Form</button>
+                <button type="submit" class="btn btn-primary" style="padding:0.65rem 1.75rem; font-size:0.95rem;">
+                  ✅ Submit & Register Patient
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECEPTION TAB 2: RECEPTION QUEUE (TC-10) -->
+      <div id="recep-tab-queue" class="recep-tab-pane" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>📋 Reception Waiting Queue</h3>
+            <span style="font-size:0.775rem; color:#64748b;">5-minute Grace Period to fix typos (TC-09)</span>
+          </div>
+          <div class="card-body">
+            <!-- Search -->
+            <div class="filter-bar">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="recep-queue-search" class="form-control" placeholder="Search queue by Patient Name or Sr. No..." />
+              </div>
+            </div>
+
+            <!-- Table (Strictly Sr. No and Name only as per TC-10!) -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width:140px;">Sr. No</th>
+                    <th>Patient Name</th>
+                    <th style="width:180px;">Registration Time</th>
+                    <th style="width:240px;">Grace Window Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recep-patient-table-body">
+                  <!-- Populated by JS with MinimalPatient model -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL OVERLAY -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div id="modal-box" class="modal-box">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- SCRIPT INCLUSIONS -->
+  <script src="js/seedData.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/appointments.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/testRunner.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
+

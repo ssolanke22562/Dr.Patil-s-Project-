@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "build": "echo 'Build successful: Static assets prepared for Vercel.'",
+    "build": "node build.js",
     "test": "node test_verify.js"
   },
   "keywords": [
