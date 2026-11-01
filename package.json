@@ -1,0 +1,21 @@
+{
+  "name": "dr-patil-advance-dentistry",
+  "version": "1.0.0",
+  "description": "Clinic Management & Patient Intake Web Application for Dr. Patil's Centre of Advance Dentistry",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'Build successful: Static assets prepared for Vercel.'",
+    "test": "node test_verify.js"
+  },
+  "keywords": [
+    "clinic-management",
+    "dentistry",
+    "patient-intake",
+    "offline-first",
+    "healthcare-system"
+  ],
+  "author": "Sarthak Raju Solanke (Roll No: 05, T.Y. - A, Sanjivani College of Engineering)",
+  "license": "MIT"
+}
