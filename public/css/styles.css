@@ -578,6 +578,14 @@ body {
   cursor: pointer;
 }
 
+.badge-partial {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .badge-first {
   background: #eff6ff;
   color: #1e40af;
@@ -1059,4 +1067,96 @@ body {
     align-items: stretch;
   }
 }
+
+/* INSTALLMENT & BILLING STYLES */
+.installment-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.installment-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.installment-kpi-card .label {
+  font-size: 0.775rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.installment-kpi-card .val {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.installment-kpi-card .sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.payment-progress-wrapper {
+  background: #f1f5f9;
+  border-radius: 999px;
+  height: 9px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.payment-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d9488, #10b981);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.pay-mode-pill {
+  display: inline-block;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.pay-mode-pill.upi {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-color: #ddd6fe;
+}
+
+.pay-mode-pill.cash {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.pay-mode-pill.card {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.pay-mode-pill.bank {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
 

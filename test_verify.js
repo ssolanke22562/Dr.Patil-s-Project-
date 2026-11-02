@@ -78,6 +78,49 @@ async function run() {
   }
 
   console.log("✓ All Digital Notes & Local Storage X-Ray diagnostic tests passed!");
+
+  console.log("\n=== Verifying Admin Installment Payment Ledger & EMI Features ===");
+  // 4. Verify Installment Addition & Balance Calculation
+  const targetPatient = window.DentalDB.getPatients({ role: 'Admin' }).find(p => p.id === 'pat_005');
+  const finBefore = window.DentalDB.getPatientFinancials(targetPatient);
+  console.log(`Initial status for ${targetPatient.name}: Fee ₹${finBefore.totalFee}, Paid ₹${finBefore.paidAmount}, Due ₹${finBefore.balanceDue}, Status: ${finBefore.status}`);
+
+  const addRes = window.DentalDB.addPatientInstallment(targetPatient.id, {
+    amount: 2000,
+    mode: 'UPI / PhonePe',
+    notes: 'Final installment settlement post-op follow up',
+    receiptNo: 'REC-SR005-02'
+  }, adminUser);
+
+  const updatedTarget = window.DentalDB.getPatientById(targetPatient.id, 'Admin');
+  const finAfter = window.DentalDB.getPatientFinancials(updatedTarget);
+  console.log(`✓ Recorded Installment: ₹2,000 (${addRes.installment.receiptNo}) -> New Paid: ₹${finAfter.paidAmount}, Due: ₹${finAfter.balanceDue}, Status: ${finAfter.status}`);
+
+  if (finAfter.paidAmount !== finBefore.paidAmount + 2000) {
+    throw new Error('Installment paid amount calculation mismatch');
+  }
+  if (finAfter.balanceDue !== Math.max(0, finBefore.totalFee - finAfter.paidAmount)) {
+    throw new Error('Installment balance due calculation mismatch');
+  }
+  if (finAfter.status !== 'Paid') {
+    throw new Error('Patient status did not update to Paid after full payment');
+  }
+
+  // 5. Verify Installment Deletion
+  window.DentalDB.deletePatientInstallment(targetPatient.id, addRes.installment.id, adminUser);
+  const patientAfterDelete = window.DentalDB.getPatientById(targetPatient.id, 'Admin');
+  const finDeleted = window.DentalDB.getPatientFinancials(patientAfterDelete);
+  if (finDeleted.paidAmount !== finBefore.paidAmount) {
+    throw new Error('Paid amount did not revert after installment deletion');
+  }
+  console.log(`✓ Verified Installment Deletion: Reverted to Paid ₹${finDeleted.paidAmount}, Due ₹${finDeleted.balanceDue}, Status: ${finDeleted.status}`);
+
+  // 6. Verify Strict Reception Privacy for Installments
+  const recPatient = window.DentalDB.getPatientById(targetPatient.id, 'Reception');
+  if (recPatient.installments !== undefined || recPatient.paymentAmount !== undefined || recPatient.paymentStatus !== undefined) {
+    throw new Error('Security Breach: Receptionist can access financial installments data!');
+  }
+  console.log('✓ Strict RBAC Privacy Verified: Receptionists cannot inspect installment records or fees.');
   console.log("================================================\n");
 
   if (res.failed > 0) {

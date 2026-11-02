@@ -171,7 +171,10 @@ const DentalDB = (() => {
 
     // Filter by payment status (Admin only)
     if (role === 'Admin' && paymentStatus !== 'All') {
-      list = list.filter(p => p.paymentStatus === paymentStatus);
+      list = list.filter(p => {
+        const fin = getPatientFinancials(p);
+        return fin.status === paymentStatus || p.paymentStatus === paymentStatus;
+      });
     }
 
     // Filter by date range
@@ -300,7 +303,8 @@ const DentalDB = (() => {
       registeredBy: user ? user.email : 'Unknown',
       graceWindowExpiry,
       digitalNotes: formData.digitalNotes || [],
-      xrays: formData.xrays || []
+      xrays: formData.xrays || [],
+      installments: formData.installments || []
     };
 
     const patients = getRaw(STORAGE_KEYS.PATIENTS) || [];
@@ -387,6 +391,134 @@ const DentalDB = (() => {
     return merged;
   }
 
+  // Financial calculation helper for installment tracking
+  function getPatientFinancials(patient) {
+    if (!patient) return { totalFee: 0, paidAmount: 0, balanceDue: 0, status: 'Pending', percentPaid: 0, installmentsCount: 0 };
+    const totalFee = Number(patient.paymentAmount) || 0;
+    const installments = Array.isArray(patient.installments) ? patient.installments : [];
+
+    let paidAmount = 0;
+    if (installments.length > 0) {
+      paidAmount = installments.reduce((sum, inst) => sum + (Number(inst.amount) || 0), 0);
+    } else if (patient.paymentStatus === 'Paid') {
+      paidAmount = totalFee;
+    }
+
+    const balanceDue = Math.max(0, totalFee - paidAmount);
+
+    let status = 'Pending';
+    if (paidAmount >= totalFee && totalFee > 0) {
+      status = 'Paid';
+    } else if (paidAmount > 0) {
+      status = 'Partial';
+    } else if (patient.paymentStatus === 'Paid') {
+      status = 'Paid';
+    }
+
+    const percentPaid = totalFee > 0 ? Math.min(100, Math.round((paidAmount / totalFee) * 100)) : (status === 'Paid' ? 100 : 0);
+
+    return {
+      totalFee,
+      paidAmount,
+      balanceDue,
+      status,
+      percentPaid,
+      installmentsCount: installments.length
+    };
+  }
+
+  // Record Installment Payment (Admin)
+  function addPatientInstallment(patientId, installmentData, user) {
+    const patients = getRaw(STORAGE_KEYS.PATIENTS) || [];
+    const patient = patients.find(p => p.id === patientId);
+    if (!patient) throw new Error('Patient record not found.');
+
+    const amount = parseFloat(installmentData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new Error('Installment amount must be a valid positive number greater than 0.');
+    }
+
+    if (!Array.isArray(patient.installments)) {
+      patient.installments = [];
+    }
+
+    const nextSeq = patient.installments.length + 1;
+    const receiptNo = (installmentData.receiptNo || '').trim() || `REC-${(patient.srNo || 'SR').replace(/[^0-9]/g, '') || '000'}-${String(nextSeq).padStart(2, '0')}`;
+
+    const newInstallment = {
+      id: generateId('inst'),
+      receiptNo,
+      date: installmentData.date || new Date().toISOString().split('T')[0],
+      amount,
+      mode: installmentData.mode || 'UPI / QR Code',
+      notes: (installmentData.notes || '').trim() || 'Installment Payment',
+      receivedBy: user ? (user.name || user.email) : 'Dr. Ganesh Janjal',
+      createdAt: new Date().toISOString()
+    };
+
+    patient.installments.push(newInstallment);
+
+    // Auto-update paymentStatus based on total paid vs total fee
+    const fin = getPatientFinancials(patient);
+    patient.paymentStatus = fin.status;
+
+    setRaw(STORAGE_KEYS.PATIENTS, patients);
+
+    logAudit('INSTALLMENT_ADDED', `Recorded installment of ₹${amount} (${receiptNo}, ${newInstallment.mode}) for ${patient.name} (${patient.srNo}) by ${newInstallment.receivedBy}.`);
+
+    return { patient, installment: newInstallment, financials: fin };
+  }
+
+  // Delete Installment Payment (Admin)
+  function deletePatientInstallment(patientId, installmentId, user) {
+    const patients = getRaw(STORAGE_KEYS.PATIENTS) || [];
+    const patient = patients.find(p => p.id === patientId);
+    if (!patient) throw new Error('Patient record not found.');
+
+    if (!Array.isArray(patient.installments)) {
+      patient.installments = [];
+    }
+
+    const removed = patient.installments.find(i => i.id === installmentId);
+    patient.installments = patient.installments.filter(i => i.id !== installmentId);
+
+    // Recompute payment status
+    const fin = getPatientFinancials(patient);
+    patient.paymentStatus = fin.status;
+
+    setRaw(STORAGE_KEYS.PATIENTS, patients);
+
+    const amountStr = removed ? `₹${removed.amount}` : 'item';
+    logAudit('INSTALLMENT_DELETED', `Deleted installment ${amountStr} for ${patient.name} (${patient.srNo}) by ${user ? (user.name || user.email) : 'Admin'}.`);
+
+    return { patient, financials: fin };
+  }
+
+  // Update Total Treatment Package Fee (Admin)
+  function updatePatientTreatmentFee(patientId, newFee, user) {
+    const patients = getRaw(STORAGE_KEYS.PATIENTS) || [];
+    const patient = patients.find(p => p.id === patientId);
+    if (!patient) throw new Error('Patient record not found.');
+
+    const fee = parseFloat(newFee);
+    if (isNaN(fee) || fee < 0) {
+      throw new Error('Treatment package fee must be a valid non-negative number.');
+    }
+
+    const oldFee = patient.paymentAmount || 0;
+    patient.paymentAmount = fee;
+
+    // Recalculate status
+    const fin = getPatientFinancials(patient);
+    patient.paymentStatus = fin.status;
+
+    setRaw(STORAGE_KEYS.PATIENTS, patients);
+
+    logAudit('TREATMENT_FEE_UPDATED', `Treatment package fee for ${patient.name} (${patient.srNo}) updated from ₹${oldFee} to ₹${fee} by ${user ? (user.name || user.email) : 'Admin'}.`);
+
+    return { patient, financials: fin };
+  }
+
   // One-tap Payment Status Toggle (Admin)
   function togglePaymentStatus(patientId, user) {
     const patients = getRaw(STORAGE_KEYS.PATIENTS) || [];
@@ -396,10 +528,18 @@ const DentalDB = (() => {
     }
 
     const prevStatus = patient.paymentStatus;
-    patient.paymentStatus = prevStatus === 'Paid' ? 'Pending' : 'Paid';
+    const installments = patient.installments || [];
+    const paidSum = installments.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalFee = Number(patient.paymentAmount) || 0;
+
+    if (prevStatus === 'Paid') {
+      patient.paymentStatus = (installments.length > 0 && paidSum < totalFee) ? 'Partial' : 'Pending';
+    } else {
+      patient.paymentStatus = 'Paid';
+    }
     setRaw(STORAGE_KEYS.PATIENTS, patients);
 
-    logAudit('PAYMENT_TOGGLE', `Payment status for ${patient.name} (${patient.srNo}) toggled from ${prevStatus} to ${patient.paymentStatus} by ${user ? user.email : 'Admin'}.`);
+    logAudit('PAYMENT_TOGGLE', `Payment status for ${patient.name} (${patient.srNo}) toggled from ${prevStatus} to ${patient.paymentStatus} by ${user ? (user.name || user.email) : 'Admin'}.`);
 
     return patient;
   }
@@ -526,14 +666,26 @@ const DentalDB = (() => {
     const appointments = getRaw(STORAGE_KEYS.APPOINTMENTS) || [];
     const todayAppointments = appointments.filter(a => a.date === todayStr && a.status !== 'Cancelled').length;
 
-    // Pending payments count & total amount
-    const pendingPatients = nonDeleted.filter(p => p.paymentStatus === 'Pending');
-    const pendingCount = pendingPatients.length;
-    const pendingAmount = pendingPatients.reduce((sum, p) => sum + (p.paymentAmount || 0), 0);
+    // Financial calculations accounting for partial installments
+    let totalCollected = 0;
+    let pendingAmount = 0;
+    let pendingCount = 0;
+    let partialCount = 0;
+    let paidCount = 0;
 
-    // Paid amount & revenue
-    const paidPatients = nonDeleted.filter(p => p.paymentStatus === 'Paid');
-    const totalCollected = paidPatients.reduce((sum, p) => sum + (p.paymentAmount || 0), 0);
+    nonDeleted.forEach(p => {
+      const fin = getPatientFinancials(p);
+      totalCollected += fin.paidAmount;
+      pendingAmount += fin.balanceDue;
+      if (fin.status === 'Paid') {
+        paidCount++;
+      } else if (fin.status === 'Partial') {
+        partialCount++;
+        pendingCount++;
+      } else {
+        pendingCount++;
+      }
+    });
 
     // First time vs Already consulted
     const firstTimeCount = nonDeleted.filter(p => p.visitType === 'First Time').length;
@@ -545,6 +697,8 @@ const DentalDB = (() => {
       pendingCount,
       pendingAmount,
       totalCollected,
+      partialCount,
+      paidCount,
       firstTimeCount,
       alreadyConsultedCount
     };
@@ -667,6 +821,10 @@ const DentalDB = (() => {
     deletePatientDigitalNote,
     addPatientXray,
     deletePatientXray,
+    getPatientFinancials,
+    addPatientInstallment,
+    deletePatientInstallment,
+    updatePatientTreatmentFee,
     STORAGE_KEYS,
     getRaw,
     setRaw

@@ -585,10 +585,36 @@ const App = (() => {
     }
 
     tbody.innerHTML = patients.map(p => {
-      const isPaid = p.paymentStatus === 'Paid';
-      const badgeClass = isPaid ? 'badge-paid' : 'badge-pending';
-      const badgeText = isPaid ? 'PAID' : 'PENDING';
+      const fin = window.DentalDB.getPatientFinancials ? window.DentalDB.getPatientFinancials(p) : { totalFee: p.paymentAmount || 500, paidAmount: 0, balanceDue: 0, status: p.paymentStatus };
+      const isPaid = fin.status === 'Paid';
+      const isPartial = fin.status === 'Partial';
+      const badgeClass = isPaid ? 'badge-paid' : (isPartial ? 'badge-partial' : 'badge-pending');
       const visitBadge = p.visitType === 'First Time' ? 'badge-first' : 'badge-consulted';
+      const instCount = (p.installments || []).length;
+
+      let paymentHtml = '';
+      if (isPaid) {
+        paymentHtml = `
+          <span class="badge ${badgeClass}" title="Click to view Billing & Installments" onclick="App.openPatientProfile('${p.id}', 'billing')">
+            ✓ PAID (₹${fin.totalFee.toLocaleString('en-IN')})
+          </span>
+        `;
+      } else if (isPartial) {
+        paymentHtml = `
+          <span class="badge ${badgeClass}" title="Click to view Billing & Installments" onclick="App.openPatientProfile('${p.id}', 'billing')">
+            ⏳ PARTIAL (₹${fin.paidAmount.toLocaleString('en-IN')} / ₹${fin.totalFee.toLocaleString('en-IN')})
+          </span>
+          <div style="font-size:0.7rem; color:#b91c1c; font-weight:700; margin-top:2px;">
+            Due: ₹${fin.balanceDue.toLocaleString('en-IN')}
+          </div>
+        `;
+      } else {
+        paymentHtml = `
+          <span class="badge ${badgeClass}" title="Click to view Billing & Installments" onclick="App.openPatientProfile('${p.id}', 'billing')">
+            ✕ PENDING (₹${fin.totalFee.toLocaleString('en-IN')})
+          </span>
+        `;
+      }
 
       return `
         <tr>
@@ -608,9 +634,7 @@ const App = (() => {
             <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${p.chiefProblem || 'Routine checkup'}</div>
           </td>
           <td>
-            <span class="badge ${badgeClass}" title="Click to toggle payment status (TC-13)" onclick="App.togglePayment('${p.id}')">
-              ${badgeText} (₹${p.paymentAmount || 500})
-            </span>
+            ${paymentHtml}
           </td>
           <td style="font-size:0.775rem; color:#64748b;">
             ${new Date(p.registrationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
@@ -619,6 +643,9 @@ const App = (() => {
             <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
               <button class="btn btn-secondary btn-xs" title="View Patient Profile" onclick="App.openPatientProfile('${p.id}', 'overview')">
                 👁️ Profile
+              </button>
+              <button class="btn btn-outline-primary btn-xs" title="Billing & Installments" onclick="App.openPatientProfile('${p.id}', 'billing')">
+                💳 Pay (${instCount})
               </button>
               <button class="btn btn-outline-primary btn-xs" title="Digital Clinical Notes" onclick="App.openPatientProfile('${p.id}', 'notes')">
                 📝 Notes (${(p.digitalNotes || []).length})
@@ -868,12 +895,16 @@ const App = (() => {
     const appointments = window.DentalDB.getAppointments({ patientId: p.id });
     const notes = p.digitalNotes || [];
     const xrays = p.xrays || [];
+    const financials = window.DentalDB.getPatientFinancials ? window.DentalDB.getPatientFinancials(p) : { totalFee: p.paymentAmount || 500, paidAmount: 0, balanceDue: 0, status: p.paymentStatus, percentPaid: 0, installmentsCount: 0 };
+    const installments = p.installments || [];
+
+    const badgeClass = financials.status === 'Paid' ? 'badge-paid' : (financials.status === 'Partial' ? 'badge-partial' : 'badge-pending');
 
     const modalContent = `
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:0.65rem;">
           <h3 style="margin:0;">📋 Patient Clinical File — <span style="color:#0f766e;">${p.name} (${p.srNo})</span></h3>
-          <span class="badge ${p.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}">${p.paymentStatus}</span>
+          <span class="badge ${badgeClass}">${financials.status.toUpperCase()}</span>
         </div>
         <button class="btn-close-modal" onclick="App.closeModal()">✕</button>
       </div>
@@ -893,6 +924,9 @@ const App = (() => {
           <button class="modal-subtab-btn ${activeTab === 'appointments' ? 'active' : ''}" onclick="App.switchPatientTab('appointments')">
             📅 Appointments (${appointments.length})
           </button>
+          <button class="modal-subtab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="App.switchPatientTab('billing')">
+            💳 Billing &amp; Installments (${installments.length})
+          </button>
         </div>
       </div>
 
@@ -907,7 +941,7 @@ const App = (() => {
             <div style="flex:1;">
               <div style="display:flex; align-items:center; justify-content:space-between;">
                 <h2 style="font-size:1.35rem; font-weight:800; color:#0f172a;">${p.name}</h2>
-                <span style="font-size:0.8rem; font-weight:700; color:#0f766e;">Fee: ₹${p.paymentAmount || 500}</span>
+                <span style="font-size:0.8rem; font-weight:700; color:#0f766e;">Fee: ₹${financials.totalFee.toLocaleString('en-IN')}</span>
               </div>
               <p style="font-size:0.85rem; color:#64748b; margin-top:2px;">
                 ${p.age} Years &bull; ${p.sex} &bull; Visit Type: <strong>${p.visitType}</strong>
@@ -930,17 +964,23 @@ const App = (() => {
             ${p.lastConsultDate ? `<p style="font-size:0.775rem; color:#64748b; margin-top:4px;">Last Consulted: ${p.lastConsultDate}</p>` : ''}
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem;">
             <div style="background:#f0fdfa; border:1px solid #ccfbf1; padding:0.85rem; border-radius:var(--radius-sm); cursor:pointer;" onclick="App.switchPatientTab('notes')">
-              <strong style="color:#0f766e; font-size:0.85rem;">📝 Digital Notes Summary:</strong>
-              <p style="font-size:0.8rem; color:#134e4a; margin-top:3px;">
-                ${notes.length} note(s) recorded. Latest: ${notes[0] ? notes[0].category : 'None'}. Click to view &amp; add.
+              <strong style="color:#0f766e; font-size:0.85rem;">📝 Digital Notes:</strong>
+              <p style="font-size:0.785rem; color:#134e4a; margin-top:3px;">
+                ${notes.length} note(s). Latest: ${notes[0] ? notes[0].category : 'None'}. Click to view &amp; add.
               </p>
             </div>
             <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:0.85rem; border-radius:var(--radius-sm); cursor:pointer;" onclick="App.switchPatientTab('xrays')">
-              <strong style="color:#0284c7; font-size:0.85rem;">🩻 Dental Radiographs:</strong>
-              <p style="font-size:0.8rem; color:#0c4a6e; margin-top:3px;">
-                ${xrays.length} X-ray(s) in repository. Click to inspect or import new X-rays from local disk.
+              <strong style="color:#0284c7; font-size:0.85rem;">🩻 Radiographs:</strong>
+              <p style="font-size:0.785rem; color:#0c4a6e; margin-top:3px;">
+                ${xrays.length} X-ray(s) on file. Click to inspect &amp; import.
+              </p>
+            </div>
+            <div style="background:#fffbeb; border:1px solid #fef3c7; padding:0.85rem; border-radius:var(--radius-sm); cursor:pointer;" onclick="App.switchPatientTab('billing')">
+              <strong style="color:#b45309; font-size:0.85rem;">💳 Fee &amp; Installments:</strong>
+              <p style="font-size:0.785rem; color:#78350f; margin-top:3px;">
+                ₹${financials.paidAmount.toLocaleString('en-IN')} paid (${financials.percentPaid}%). Due: <strong>₹${financials.balanceDue.toLocaleString('en-IN')}</strong>.
               </p>
             </div>
           </div>
@@ -1164,6 +1204,182 @@ const App = (() => {
           `}
         </div>
 
+        <!-- PANE 5: BILLING & INSTALLMENTS -->
+        <div id="patient-tab-pane-billing" style="display:${activeTab === 'billing' ? 'block' : 'none'};">
+          <!-- Top Financial KPI Cards -->
+          <div class="installment-kpi-grid">
+            <div class="installment-kpi-card">
+              <div class="label">
+                <span>Total Package Fee</span>
+                <button class="btn btn-outline-primary btn-xs" style="padding:1px 6px; font-size:0.7rem;" onclick="App.promptUpdateTreatmentFee('${p.id}')">✏️ Edit</button>
+              </div>
+              <div class="val" style="color:#0f766e;">₹${financials.totalFee.toLocaleString('en-IN')}</div>
+              <div class="sub">Agreed Treatment Cost</div>
+            </div>
+
+            <div class="installment-kpi-card">
+              <div class="label">
+                <span>Total Paid</span>
+                <span style="font-weight:700; color:#059669;">${financials.percentPaid}%</span>
+              </div>
+              <div class="val" style="color:#059669;">₹${financials.paidAmount.toLocaleString('en-IN')}</div>
+              <div class="payment-progress-wrapper">
+                <div class="payment-progress-fill" style="width:${financials.percentPaid}%;"></div>
+              </div>
+              <div class="sub" style="margin-top:4px;">${financials.installmentsCount} payment installment(s)</div>
+            </div>
+
+            <div class="installment-kpi-card" style="border-left: 3px solid ${financials.balanceDue > 0 ? '#f59e0b' : '#10b981'};">
+              <div class="label">
+                <span>Remaining Balance</span>
+                <span class="badge ${financials.balanceDue > 0 ? 'badge-partial' : 'badge-paid'}" style="font-size:0.65rem;">
+                  ${financials.balanceDue > 0 ? 'DUE' : 'SETTLED'}
+                </span>
+              </div>
+              <div class="val" style="color:${financials.balanceDue > 0 ? '#b91c1c' : '#059669'};">
+                ₹${financials.balanceDue.toLocaleString('en-IN')}
+              </div>
+              <div class="sub">${financials.balanceDue > 0 ? 'Pending Collection' : 'Zero outstanding balance'}</div>
+            </div>
+
+            <div class="installment-kpi-card">
+              <div class="label">
+                <span>Status &amp; Actions</span>
+              </div>
+              <div style="margin: 4px 0;">
+                <span class="badge ${badgeClass}" style="font-size:0.85rem; padding: 4px 10px;">
+                  ${financials.status.toUpperCase()}
+                </span>
+              </div>
+              <button class="btn btn-secondary btn-xs" style="margin-top:6px; width:100%;" onclick="App.togglePayment('${p.id}')">
+                🔄 Toggle Status (TC-13)
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Installment Form -->
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1.15rem; margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+              <h4 style="font-size:0.9rem; font-weight:700; color:#0f766e; margin:0;">
+                💳 Record New Payment Installment
+              </h4>
+              <span style="font-size:0.75rem; color:#64748b;">
+                Attending Doctor: <strong>Dr. Ganesh Janjal</strong>
+              </span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 140px 180px 140px 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+              <div>
+                <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:3px;">
+                  Amount (₹) *
+                </label>
+                <input type="number" id="inst-amount-input" class="form-control" placeholder="e.g. 5000" min="1" max="${Math.max(100000, financials.balanceDue || 50000)}" value="${financials.balanceDue > 0 ? financials.balanceDue : 1000}" required />
+              </div>
+
+              <div>
+                <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:3px;">
+                  Payment Mode
+                </label>
+                <select id="inst-mode-input" class="form-control">
+                  <option value="UPI / QR Code">UPI / QR Code</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Debit / Credit Card">Debit / Credit Card</option>
+                  <option value="Net Banking / NEFT">Net Banking / NEFT</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:3px;">
+                  Payment Date
+                </label>
+                <input type="date" id="inst-date-input" class="form-control" value="${new Date().toISOString().split('T')[0]}" />
+              </div>
+
+              <div>
+                <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:3px;">
+                  Receipt Number
+                </label>
+                <input type="text" id="inst-receipt-input" class="form-control" value="REC-${(p.srNo || 'SR').replace(/[^0-9]/g, '') || '000'}-${String((p.installments || []).length + 1).padStart(2, '0')}" />
+              </div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; align-items:flex-end;">
+              <div style="flex:1;">
+                <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:3px;">
+                  Treatment Phase / Payment Remarks
+                </label>
+                <input type="text" id="inst-notes-input" class="form-control" placeholder="e.g. Down payment, Sitting 2 obturation, Final crown cementation, etc." />
+              </div>
+              <button class="btn btn-primary" style="white-space:nowrap; height:38px;" onclick="App.addInstallment('${p.id}')">
+                + Record Installment
+              </button>
+            </div>
+          </div>
+
+          <!-- Chronological Installment Ledger -->
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+              <h4 style="font-size:0.9rem; font-weight:700; color:#334155; margin:0;">
+                📜 Payment &amp; Installment Ledger (${(p.installments || []).length})
+              </h4>
+              <span style="font-size:0.75rem; color:#64748b;">All payments are logged to tamper-proof audit trail</span>
+            </div>
+
+            ${(!p.installments || p.installments.length === 0) ? `
+              <div style="text-align:center; padding:2rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:var(--radius-sm); color:#94a3b8; font-size:0.85rem;">
+                No installments recorded yet. Record partial payments or initial deposits using the form above.
+              </div>
+            ` : `
+              <div class="table-responsive" style="border:1px solid #e2e8f0; border-radius:var(--radius-sm); overflow:hidden;">
+                <table class="data-table" style="font-size:0.825rem;">
+                  <thead>
+                    <tr style="background:#f8fafc;">
+                      <th style="padding:8px 10px;">Receipt #</th>
+                      <th style="padding:8px 10px;">Date</th>
+                      <th style="padding:8px 10px;">Amount (₹)</th>
+                      <th style="padding:8px 10px;">Payment Mode</th>
+                      <th style="padding:8px 10px;">Treatment Phase / Remarks</th>
+                      <th style="padding:8px 10px;">Received By</th>
+                      <th style="padding:8px 10px; text-align:right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${p.installments.map((inst, idx) => {
+                      let modeClass = 'upi';
+                      if (inst.mode && inst.mode.toLowerCase().includes('cash')) modeClass = 'cash';
+                      else if (inst.mode && inst.mode.toLowerCase().includes('card')) modeClass = 'card';
+                      else if (inst.mode && (inst.mode.toLowerCase().includes('bank') || inst.mode.toLowerCase().includes('neft'))) modeClass = 'bank';
+
+                      return `
+                        <tr>
+                          <td style="padding:8px 10px; font-weight:700; color:#0f766e;">${inst.receiptNo || 'REC-' + (idx + 1)}</td>
+                          <td style="padding:8px 10px; color:#475569;">${inst.date}</td>
+                          <td style="padding:8px 10px; font-weight:800; color:#059669;">₹${Number(inst.amount).toLocaleString('en-IN')}</td>
+                          <td style="padding:8px 10px;">
+                            <span class="pay-mode-pill ${modeClass}">${inst.mode || 'Cash'}</span>
+                          </td>
+                          <td style="padding:8px 10px; color:#1e293b;">${inst.notes || 'Installment'}</td>
+                          <td style="padding:8px 10px; font-size:0.775rem; color:#64748b;">${inst.receivedBy || 'Staff'}</td>
+                          <td style="padding:8px 10px; text-align:right;">
+                            <div style="display:inline-flex; gap:0.35rem;">
+                              <button class="btn btn-secondary btn-xs" title="Print Receipt" onclick="App.printInstallmentReceipt('${p.id}', '${inst.id}')">
+                                🖨️ Receipt
+                              </button>
+                              <button class="btn btn-danger btn-xs" title="Delete Installment" onclick="App.deleteInstallment('${p.id}', '${inst.id}')">
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        </div>
+
       </div>
 
       <div class="modal-footer">
@@ -1179,7 +1395,7 @@ const App = (() => {
 
   // Switch Sub-Tabs in Patient Profile
   function switchPatientTab(tabName) {
-    const tabs = ['overview', 'notes', 'xrays', 'appointments'];
+    const tabs = ['overview', 'notes', 'xrays', 'appointments', 'billing'];
     tabs.forEach(t => {
       const pane = document.getElementById(`patient-tab-pane-${t}`);
       if (pane) pane.style.display = (t === tabName) ? 'block' : 'none';
@@ -1380,6 +1596,104 @@ const App = (() => {
   function closeLightbox() {
     const lb = document.getElementById('lightbox-overlay');
     if (lb) lb.style.display = 'none';
+  }
+
+  // Add Installment Payment (Admin)
+  function addInstallment(patientId) {
+    try {
+      const amountInput = document.getElementById('inst-amount-input');
+      const modeInput = document.getElementById('inst-mode-input');
+      const dateInput = document.getElementById('inst-date-input');
+      const receiptInput = document.getElementById('inst-receipt-input');
+      const notesInput = document.getElementById('inst-notes-input');
+
+      const amount = parseFloat(amountInput ? amountInput.value : 0);
+      if (isNaN(amount) || amount <= 0) {
+        showToast('Please enter a valid installment amount greater than ₹0.', 'error');
+        return;
+      }
+
+      const mode = modeInput ? modeInput.value : 'UPI / QR Code';
+      const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+      const receiptNo = receiptInput ? receiptInput.value.trim() : '';
+      const notes = notesInput ? notesInput.value.trim() : '';
+
+      const user = window.AuthService.getCurrentUser();
+      const res = window.DentalDB.addPatientInstallment(patientId, {
+        amount,
+        mode,
+        date,
+        receiptNo,
+        notes
+      }, user);
+
+      playAudioTone('chime');
+      showToast(`Installment of ₹${amount.toLocaleString('en-IN')} recorded successfully!`, 'success');
+      openPatientProfile(patientId, 'billing');
+      renderAdminPatientQueue();
+      renderAdminStatsAndCharts();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // Delete Installment Payment (Admin)
+  function deleteInstallment(patientId, installmentId) {
+    if (!confirm('Are you sure you want to remove this installment payment record?')) return;
+    try {
+      const user = window.AuthService.getCurrentUser();
+      window.DentalDB.deletePatientInstallment(patientId, installmentId, user);
+      playAudioTone('click');
+      showToast('Installment payment removed and balance updated.', 'info');
+      openPatientProfile(patientId, 'billing');
+      renderAdminPatientQueue();
+      renderAdminStatsAndCharts();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // Prompt update treatment package fee (Admin)
+  function promptUpdateTreatmentFee(patientId) {
+    const p = window.DentalDB.getPatientById(patientId, 'Admin');
+    if (!p) return;
+
+    const currentFee = p.paymentAmount || 500;
+    const input = prompt(`Update Total Treatment Package Fee for ${p.name} (Current: ₹${currentFee}):`, currentFee);
+    if (input === null) return;
+
+    const newFee = parseFloat(input);
+    if (isNaN(newFee) || newFee < 0) {
+      showToast('Please enter a valid non-negative treatment package fee.', 'error');
+      return;
+    }
+
+    try {
+      const user = window.AuthService.getCurrentUser();
+      window.DentalDB.updatePatientTreatmentFee(patientId, newFee, user);
+      playAudioTone('chime');
+      showToast(`Treatment fee updated to ₹${newFee.toLocaleString('en-IN')}.`, 'success');
+      openPatientProfile(patientId, 'billing');
+      renderAdminPatientQueue();
+      renderAdminStatsAndCharts();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // Print standalone Installment Receipt
+  function printInstallmentReceipt(patientId, installmentId) {
+    const p = window.DentalDB.getPatientById(patientId, 'Admin');
+    if (!p) return;
+
+    const inst = (p.installments || []).find(i => i.id === installmentId);
+    if (!inst) {
+      showToast('Installment record not found.', 'error');
+      return;
+    }
+
+    const fin = window.DentalDB.getPatientFinancials(p);
+    window.ExportService.printReceiptSlip(p, inst, fin);
   }
 
   // Print Slip
@@ -1600,7 +1914,11 @@ const App = (() => {
     deleteXray,
     toggleXrayInvert,
     openXrayLightbox,
-    closeLightbox
+    closeLightbox,
+    addInstallment,
+    deleteInstallment,
+    promptUpdateTreatmentFee,
+    printInstallmentReceipt
   };
 })();
 

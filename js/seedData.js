@@ -120,6 +120,28 @@ const SEED_PATIENTS = [
         notes: 'Pre-operative IOPA: Periapical radiolucency noted around the distal root apex. Canal curvature visible in mesial root. Alveolar crest bone level adequate.',
         importedBy: 'Dr. Ganesh Janjal'
       }
+    ],
+    installments: [
+      {
+        id: 'inst_001',
+        receiptNo: 'REC-SR001-01',
+        date: '2026-10-15',
+        amount: 2500,
+        mode: 'Cash',
+        notes: 'Initial sitting - Access cavity preparation & biomechanical instrumentation',
+        receivedBy: 'Dr. Ganesh Janjal',
+        createdAt: '2026-10-15T10:15:00.000Z'
+      },
+      {
+        id: 'inst_002',
+        receiptNo: 'REC-SR001-02',
+        date: '2026-10-22',
+        amount: 2000,
+        mode: 'UPI / QR Code',
+        notes: 'Second sitting - Root canal obturation & zirconia crown fabrication deposit',
+        receivedBy: 'Dr. Ganesh Janjal',
+        createdAt: '2026-10-22T11:45:00.000Z'
+      }
     ]
   },
   {
@@ -241,7 +263,7 @@ const SEED_PATIENTS = [
     lastConsultDate: '',
     chiefProblem: 'Impacted lower horizontal wisdom tooth causing pericoronitis and swelling.',
     photo: '',
-    paymentStatus: 'Pending',
+    paymentStatus: 'Partial',
     paymentAmount: 3500,
     registrationDate: '2026-11-01T08:45:00.000Z',
     isDeleted: false,
@@ -267,6 +289,18 @@ const SEED_PATIENTS = [
         dataUrl: SAMPLE_XRAY_OPG,
         notes: 'Panoramic view confirming horizontal impaction #38 with crown abutting distal surface of second molar #37.',
         importedBy: 'Dr. Ganesh Janjal'
+      }
+    ],
+    installments: [
+      {
+        id: 'inst_003',
+        receiptNo: 'REC-SR005-01',
+        date: '2026-11-01',
+        amount: 1500,
+        mode: 'UPI / QR Code',
+        notes: 'Down payment for surgical wisdom tooth disimpaction & medication',
+        receivedBy: 'Dr. Ganesh Janjal',
+        createdAt: '2026-11-01T09:15:00.000Z'
       }
     ]
   },
@@ -367,13 +401,35 @@ const SEED_PATIENTS = [
     lastConsultDate: '2026-10-19',
     chiefProblem: 'Osseointegration check for 2 titanium dental implants prior to abutment fixing.',
     photo: '',
-    paymentStatus: 'Paid',
+    paymentStatus: 'Partial',
     paymentAmount: 25000,
     registrationDate: '2026-10-19T15:30:00.000Z',
     isDeleted: false,
     registeredBy: 'reception1@drpatil.com',
     digitalNotes: [],
-    xrays: []
+    xrays: [],
+    installments: [
+      {
+        id: 'inst_004',
+        receiptNo: 'REC-SR010-01',
+        date: '2026-10-10',
+        amount: 10000,
+        mode: 'Net Banking / NEFT',
+        notes: 'Stage 1 implant surgery deposit & titanium fixture placement',
+        receivedBy: 'Dr. Ganesh Janjal',
+        createdAt: '2026-10-10T11:00:00.000Z'
+      },
+      {
+        id: 'inst_005',
+        receiptNo: 'REC-SR010-02',
+        date: '2026-10-25',
+        amount: 5000,
+        mode: 'UPI / QR Code',
+        notes: 'Stage 2 healing abutment connection & impression',
+        receivedBy: 'Dr. Ganesh Janjal',
+        createdAt: '2026-10-25T16:00:00.000Z'
+      }
+    ]
   }
 ];
 

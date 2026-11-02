@@ -44,7 +44,11 @@ const ExportService = (() => {
       'Chief Dental Complaint',
       'Last Consultation Date',
       'Payment Status',
-      'Payment Amount (INR)',
+      'Payment Amount / Total Fee (INR)',
+      'Total Amount Paid (INR)',
+      'Remaining Balance Due (INR)',
+      'Installments Count',
+      'Installment Ledger Breakdown',
       'Registration Date',
       'Registered By',
       'Total Appointments',
@@ -68,6 +72,11 @@ const ExportService = (() => {
         ? `[${notes[0].category} - Tooth ${notes[0].tooth}]: ${notes[0].findings}${notes[0].prescription ? ' | Rx: ' + notes[0].prescription : ''}`
         : 'No notes recorded';
 
+      const fin = window.DentalDB.getPatientFinancials ? window.DentalDB.getPatientFinancials(p) : { totalFee: p.paymentAmount || 0, paidAmount: 0, balanceDue: 0, status: p.paymentStatus, installmentsCount: 0 };
+      const instSummary = (p.installments || [])
+        .map(i => `[${i.receiptNo}: ₹${i.amount} via ${i.mode} on ${i.date} - ${i.notes}]`)
+        .join('; ') || 'No installments recorded';
+
       const row = [
         escapeCsv(p.srNo),
         escapeCsv(p.name),
@@ -79,8 +88,12 @@ const ExportService = (() => {
         escapeCsv(p.address),
         escapeCsv(p.chiefProblem),
         escapeCsv(p.lastConsultDate || 'N/A'),
-        escapeCsv(p.paymentStatus),
-        escapeCsv(p.paymentAmount || 0),
+        escapeCsv(fin.status),
+        escapeCsv(fin.totalFee),
+        escapeCsv(fin.paidAmount),
+        escapeCsv(fin.balanceDue),
+        escapeCsv(fin.installmentsCount),
+        escapeCsv(instSummary),
         escapeCsv(new Date(p.registrationDate).toLocaleDateString()),
         escapeCsv(p.registeredBy),
         escapeCsv(patientApts.length),
@@ -185,6 +198,7 @@ const ExportService = (() => {
     });
 
     const appointments = window.DentalDB.getAppointments({ patientId: patient.id });
+    const fin = window.DentalDB.getPatientFinancials ? window.DentalDB.getPatientFinancials(patient) : { totalFee: patient.paymentAmount || 500, paidAmount: 0, balanceDue: 0, status: patient.paymentStatus, percentPaid: 0 };
 
     const html = `
       <!DOCTYPE html>
@@ -327,15 +341,56 @@ const ExportService = (() => {
             <td colspan="3" style="color:#b91c1c; font-weight:600;">${patient.chiefProblem || 'Routine Examination'}</td>
           </tr>
           <tr>
-            <th>Payment Status</th>
+            <th>Billing Status</th>
             <td>
-              <span style="font-weight:700; color:${patient.paymentStatus === 'Paid' ? '#059669' : '#d97706'}">
-                ${patient.paymentStatus.toUpperCase()} (₹${patient.paymentAmount || 500})
+              <span style="font-weight:700; color:${fin.status === 'Paid' ? '#059669' : (fin.status === 'Partial' ? '#d97706' : '#b91c1c')}">
+                ${fin.status.toUpperCase()} (Total Fee: ₹${fin.totalFee.toLocaleString('en-IN')})
               </span>
             </td>
             <th>Consultation Desk</th>
             <td>Dr. Ganesh Janjal (Cabin 1)</td>
           </tr>
+        </table>
+
+        <div class="section-title">Billing &amp; Installments Ledger (${(patient.installments || []).length} Recorded Payments)</div>
+        <table class="grid-table" style="margin-bottom:15px;">
+          <tr>
+            <th style="width:25%;">Package Treatment Fee</th>
+            <td style="font-weight:700; color:#0f766e;">₹${fin.totalFee.toLocaleString('en-IN')}</td>
+            <th style="width:25%;">Total Amount Paid</th>
+            <td style="font-weight:700; color:#059669;">₹${fin.paidAmount.toLocaleString('en-IN')} (${fin.percentPaid}%)</td>
+          </tr>
+          <tr>
+            <th>Balance Due</th>
+            <td colspan="3" style="font-weight:700; color:${fin.balanceDue > 0 ? '#b91c1c' : '#059669'};">
+              ₹${fin.balanceDue.toLocaleString('en-IN')} ${fin.balanceDue === 0 ? '(All Dues Settled)' : '(Pending Balance)'}
+            </td>
+          </tr>
+          ${(patient.installments && patient.installments.length > 0) ? `
+            <tr>
+              <th>Payment History</th>
+              <td colspan="3" style="padding:6px 8px;">
+                <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                  <tr style="background:#f1f5f9; text-align:left;">
+                    <th style="padding:4px 6px; border:1px solid #cbd5e1;">Receipt #</th>
+                    <th style="padding:4px 6px; border:1px solid #cbd5e1;">Date</th>
+                    <th style="padding:4px 6px; border:1px solid #cbd5e1;">Amount</th>
+                    <th style="padding:4px 6px; border:1px solid #cbd5e1;">Mode</th>
+                    <th style="padding:4px 6px; border:1px solid #cbd5e1;">Remarks / Phase</th>
+                  </tr>
+                  ${patient.installments.map(i => `
+                    <tr>
+                      <td style="padding:4px 6px; border:1px solid #cbd5e1; font-weight:700; color:#0f766e;">${i.receiptNo}</td>
+                      <td style="padding:4px 6px; border:1px solid #cbd5e1;">${i.date}</td>
+                      <td style="padding:4px 6px; border:1px solid #cbd5e1; font-weight:700; color:#059669;">₹${Number(i.amount).toLocaleString('en-IN')}</td>
+                      <td style="padding:4px 6px; border:1px solid #cbd5e1;">${i.mode}</td>
+                      <td style="padding:4px 6px; border:1px solid #cbd5e1;">${i.notes}</td>
+                    </tr>
+                  `).join('')}
+                </table>
+              </td>
+            </tr>
+          ` : ''}
         </table>
 
         <div class="section-title">Clinical Findings & Digital Doctor Notes</div>
@@ -386,11 +441,212 @@ const ExportService = (() => {
     printWindow.document.close();
   }
 
+  // Print standalone Installment Payment Receipt (Admin)
+  function printReceiptSlip(patient, installment, financials) {
+    const printWindow = window.open('', '_blank', 'width=750,height=550');
+    if (!printWindow) {
+      alert('Pop-up blocked! Please allow pop-ups for this site to print payment receipts.');
+      return;
+    }
+
+    const receiptDate = installment.date ? new Date(installment.date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }) : new Date().toLocaleDateString('en-IN');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Receipt - ${installment.receiptNo} - ${patient.name}</title>
+        <style>
+          @page { size: A5 landscape; margin: 8mm; }
+          body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.4;
+            margin: 0;
+            padding: 15px;
+          }
+          .receipt-container {
+            border: 2px solid #0d9488;
+            border-radius: 8px;
+            padding: 18px;
+            background: #ffffff;
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0d9488;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+          }
+          .clinic-name {
+            font-size: 19px;
+            font-weight: 800;
+            color: #0f766e;
+            margin: 0 0 2px 0;
+          }
+          .clinic-sub {
+            font-size: 11px;
+            color: #64748b;
+            margin: 0;
+          }
+          .receipt-pill {
+            background: #f0fdfa;
+            border: 1px solid #0d9488;
+            color: #0f766e;
+            padding: 5px 12px;
+            border-radius: 6px;
+            text-align: right;
+          }
+          .receipt-pill .no {
+            font-size: 15px;
+            font-weight: 800;
+          }
+          .details-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+          }
+          .details-grid td, .details-grid th {
+            padding: 6px 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 12px;
+          }
+          .details-grid th {
+            background: #f8fafc;
+            text-align: left;
+            width: 25%;
+            font-weight: 600;
+            color: #475569;
+          }
+          .highlight-amount {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            padding: 10px 14px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+          }
+          .highlight-amount .amount {
+            font-size: 22px;
+            font-weight: 800;
+            color: #15803d;
+          }
+          .ledger-summary {
+            font-size: 11px;
+            color: #475569;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 15px;
+          }
+          .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 20px;
+            font-size: 11px;
+          }
+          .sign-box {
+            text-align: center;
+            border-top: 1px solid #334155;
+            width: 180px;
+            padding-top: 4px;
+          }
+          @media print {
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <div class="header">
+            <div>
+              <div class="clinic-name">Dr. Patil's Centre of Advance Dentistry</div>
+              <div class="clinic-sub">Advanced Micro-Endodontics, Implantology & Aesthetic Dental Care</div>
+              <div class="clinic-sub">Station Road, Near Shivaji Chowk, Kopargaon - 423603 | Ph: +91 98220 00000</div>
+            </div>
+            <div class="receipt-pill">
+              <div style="font-size:10px; text-transform:uppercase; font-weight:700;">Installment Receipt</div>
+              <div class="no">${installment.receiptNo}</div>
+              <div style="font-size:10px; color:#64748b;">${receiptDate}</div>
+            </div>
+          </div>
+
+          <table class="details-grid">
+            <tr>
+              <th>Patient Name</th>
+              <td style="font-weight:700; color:#0f766e;">${patient.name}</td>
+              <th>Patient Sr. No</th>
+              <td style="font-weight:700;">${patient.srNo}</td>
+            </tr>
+            <tr>
+              <th>Age / Sex</th>
+              <td>${patient.age} Yrs / ${patient.sex}</td>
+              <th>Contact Phone</th>
+              <td>+91 ${patient.primaryPhone}</td>
+            </tr>
+            <tr>
+              <th>Treatment / Problem</th>
+              <td colspan="3">${patient.chiefProblem || 'Dental Consultation'}</td>
+            </tr>
+          </table>
+
+          <div class="highlight-amount">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:#166534;">Payment Installment Received</div>
+              <div style="font-size:12px; color:#374151;">Mode: <strong>${installment.mode}</strong> &bull; Remarks: <em>${installment.notes || 'Dental Sitting Fee'}</em></div>
+            </div>
+            <div class="amount">₹${Number(installment.amount).toLocaleString('en-IN')}</div>
+          </div>
+
+          <div class="ledger-summary">
+            <div><strong>Package Fee:</strong> ₹${financials.totalFee.toLocaleString('en-IN')}</div>
+            <div><strong>Total Paid:</strong> ₹${financials.paidAmount.toLocaleString('en-IN')} (${financials.percentPaid}%)</div>
+            <div><strong>Balance Due:</strong> <span style="color:${financials.balanceDue > 0 ? '#b91c1c' : '#15803d'}; font-weight:700;">₹${financials.balanceDue.toLocaleString('en-IN')}</span></div>
+            <div><strong>Status:</strong> <span style="font-weight:700;">${financials.status.toUpperCase()}</span></div>
+          </div>
+
+          <div class="footer">
+            <div style="color:#64748b;">
+              Received with thanks by: <strong>${installment.receivedBy || 'Dr. Ganesh Janjal'}</strong><br/>
+              <em>System generated digital clinical receipt</em>
+            </div>
+            <div class="sign-box">
+              <strong>Dr. Ganesh Janjal</strong><br/>
+              <span style="color:#64748b; font-size:10px;">BDS, MDS Oral & Maxillofacial</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-print" style="margin-top: 15px; text-align: center;">
+          <button onclick="window.print()" style="background:#0d9488; color:#fff; border:none; padding:8px 20px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px;">
+            🖨️ Print Receipt Now
+          </button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+
   return {
     exportPatientsAndAppointmentsCsv,
     exportDatabaseBackup,
     restoreDatabaseFromFile,
-    printPatientSlip
+    printPatientSlip,
+    printReceiptSlip
   };
 })();
 
